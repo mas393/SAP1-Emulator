@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "RAM.h"
+#include "registers.h"
 
 RAM* init_RAM(int s, int b)
 {
@@ -18,10 +18,16 @@ void RAM_assign(RAM *mem, char *loc_nibble, char *data)
   mem -> vals[block] = v;
 }
 
-char RAM_access(RAM *mem, char *loc_nibble)
+char* get_RAM(RAM *mem)
 {
-  int block = strtol(loc_nibble, 0, 2);
-  char val = mem -> vals[block];
+  char *val = malloc(mem -> block_size);
+  int block = strtol(get_reg(mem -> cur_addr, 4), 0, 2);
+  char c = mem -> vals[block];
+
+  for (int j= mem -> block_size - 1; j >= 0; j--) // j is accessing the bit in range 0 to blocksize
+    {
+      val[mem -> block_size - 1 - j] = (c >> j & 0x01);
+    }
   
   return val;
 }

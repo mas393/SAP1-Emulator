@@ -1,7 +1,10 @@
+#include "registers.h"
+
 typedef struct RAM
 {
   int blocks;
   int block_size;
+  reg *cur_addr;
   char *vals;
 } RAM;
 

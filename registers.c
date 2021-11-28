@@ -35,6 +35,13 @@ int reg_access(reg *r, int bit_num) // lsb has bit_num = 0
   return (r -> vals)[bit_num/8] >> (bit_num % 8) & 0x01;
 }
 
+char* get_reg(reg *r, int s) //need to specify upper or lower
+{
+  char *out = malloc(s);
+  for (int i = r -> size - 1; i >= 0; i--) out[i] = reg_access(r, i);
+  return out;
+}
+
 void print_register(reg *r)
 {
   for (int i = r -> size - 1; i >= 0; i--)
