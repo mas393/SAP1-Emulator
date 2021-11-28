@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include "adder_subtracter.h"
 
+adder_subtracter* init_adder_subtracter()
+{
+  adder_subtracter *temp;
+  temp = malloc(sizeof(adder_subtracter));
+  return temp;
+}
+
 char add_bits(reg *r1, reg *r2, int bit_loc, char *carry)
 {
   char v = '0';

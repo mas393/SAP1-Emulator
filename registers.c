@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "registers.h"
+#include <string.h>
 
 reg* init_register(int s) // initializing and filling of register are seperate items b/c in reality the register is initialized when it is made
 {
@@ -16,12 +17,22 @@ reg* init_register(int s) // initializing and filling of register are seperate i
 void reg_assign(reg *r, char *bit_string)
 {
   //should include loop that iterates over bit_string in char size chunks and assigns them memory allocated to the register
-  r -> vals[0] = strtol(bit_string, 0, 2);  
+  int remaining = r -> size;
+  for (int i = 0; i < r -> size; i += 8)
+    {
+      int s = (remaining % 8 == 0) ? 8: remaining % 8;
+      char *temp = malloc(s);
+      memcpy(temp, bit_string, s);
+      r -> vals[(r -> size - i)/8] = strtol(temp, 0, 2);
+      bit_string += s;
+      remaining -= s;
+      free(temp);
+    }
 }
 
 int reg_access(reg *r, int bit_num) // lsb has bit_num = 0
 {
-  return (r -> vals)[bit_num/(r -> size)] >> bit_num & 0x01;
+  return (r -> vals)[bit_num/8] >> (bit_num % 8) & 0x01;
 }
 
 void print_register(reg *r)
