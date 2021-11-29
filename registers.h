@@ -11,7 +11,7 @@ void reg_assign(reg*, char*);
 
 int reg_access(reg*, int);
 
-char* get_reg(reg*, int s);
+char* get_reg(reg*, int s, int o);
 
 void print_register(reg*);
 
@@ -27,10 +27,11 @@ typedef struct RAM
 
 RAM* init_RAM(int, int);
 
-void RAM_assign(RAM*, char*, char*);
+void set_RAM(RAM*, char*, char*);
 
 char* get_RAM(RAM*);
 
 void print_RAM(RAM*);
 
 void del_RAM(RAM*);
+

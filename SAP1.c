@@ -5,12 +5,15 @@
 //#include "RAM.h"
 #include "adder_subtracter.h"
 
-//perhaps we abstract reg struct and functions as "memory" and then we build register and ram structs that incorporate the memory
-// then the register struct could include enable load and clock bits
 #define PCMAX 15
 
-// TODO: make nop control word constatnt and create a reset control word function for c -> controlword
 // TODO: reorganize .h and .c hierarchy 
+// TODO: Fix subtraction function.
+//       Something about modifying the BReg in-place within the subtraction funtion is not working
+//       Subtraction demo in Main is working
+//       Maybe make addition and subtraction both return strings and then write those to WBus  
+// TODO: Perhaps implement a constant string that contains the base control word
+// TODO: implement computer shutdown function to free all components
 
 typedef int ProgramCounter;
 typedef reg bus;
@@ -207,6 +210,20 @@ typedef struct computer
   controller_sequencer *c_s;
 } computer;
 
+void print_state(computer *c)
+{
+  printf("\n");
+  printf("-----------PROGRAM STATE------------\n");
+  printf("program counter = %d\n", c -> PC);
+  printf("Accumulator = "); print_register(c -> Accumulator); printf("\n");
+  printf("BReg = "); print_register(c -> BReg); printf("\n");
+  printf("Mar = "); print_register(c -> Mar); printf("\n");
+  printf("Instruction Register: \n");
+  printf("  High nibble = "); print_register(c -> ir -> highNibble); printf("\n");
+  printf("  Low nibble  = "); print_register(c -> ir -> lowNibble); printf("\n");
+  printf("\n");
+}
+
 int boot_computer(computer *c)
 {
   c -> PC = 0;
@@ -226,6 +243,7 @@ int boot_computer(computer *c)
 
   return 0;
 }
+
 /*
 int shutdown_computer(computer *c)
 {
@@ -236,144 +254,137 @@ int shutdown_computer(computer *c)
   return 0;
 }
 */
+
 int load_instructions(char *f, computer *c)
 {
+  //instructions
+  set_RAM(c -> Mem, "0000", "00001001"); //lda 9h
+  set_RAM(c -> Mem, "0001", "00011010"); //add ah
+  set_RAM(c -> Mem, "0010", "00011011"); //add bh
+  set_RAM(c -> Mem, "0011", "00101100"); //sub ch
+  set_RAM(c -> Mem, "0100", "11100000"); //out
+  set_RAM(c -> Mem, "0101", "11110000"); //hlt
+  //data
+  set_RAM(c -> Mem, "1001", "00010000");
+  set_RAM(c -> Mem, "1010", "00010100");
+  set_RAM(c -> Mem, "1011", "00011000");
+  set_RAM(c -> Mem, "1100", "00100000");
   //will parse assembly in f and store in c -> mem
   return 0;
-}
-
-void clock_tick_down(computer *c)
-{
-  //c -> mem -> cur_addr = c -> mar; c->mem->curr_add always points to c->mar;
-  
 }
 
 
 int control_string_change(computer *c, int b)
 {
   char val[] = "001111100011";
-  return (reg_access(c -> ControlBus, b) == val[b]);
+  char test = reg_access(c -> ControlBus, c -> ControlBus -> size - b - 1) ? '1':'0';
+  return (test != val[b]);
 }
 
 void clock_tick_up(computer *c)
 {
   if (control_string_change(c, C_P)) c -> PC++;
 
-  //  char *val = malloc(8);
   // set bus
   if (control_string_change(c, Enable_P)) reg_assign(c -> WBus, get_PC(c -> PC));
   else if (control_string_change(c, CE_bar)) reg_assign(c -> WBus, get_RAM(c -> Mem));
-  else if (control_string_change(c, Enable_I_bar)) reg_assign(c -> WBus, get_reg(c -> ir -> lowNibble, 4));
-  else if (control_string_change(c, Enable_U)) reg_assign(c -> WBus, get_reg(addition(c -> as), 8)); //could just return char from additon/subtraction
-  else if (control_string_change(c, S_U)) reg_assign(c -> WBus, get_reg(subtraction(c -> as), 8)); //could just return char from additon/subtraction
-  
+  else if (control_string_change(c, Enable_I_bar)) reg_assign(c -> WBus, get_reg(c -> ir -> lowNibble, 4, 0));
+  else if (control_string_change(c, Enable_U)) reg_assign(c -> WBus, get_reg(addition(c -> as), 8, 0)); //could just return char from additon/subtraction
+  else if (control_string_change(c, S_U)) reg_assign(c -> WBus, get_reg(subtraction(c -> as), 8, 0)); //could just return char from additon/subtraction
+  else if (control_string_change(c, Enable_A)) reg_assign(c -> WBus, get_reg(c -> Accumulator, 8, 0));
+
   //  get bus
-  if (control_string_change(c, Load_M_bar)) reg_assign(c -> Mar, get_reg(c -> WBus, 4));
-  else if (control_string_change(c, Load_I_bar)) reg_assign(c -> ir -> highNibble, get_reg(c -> WBus, 4)); 
-  else if (control_string_change(c, Load_A_bar)) reg_assign(c -> Accumulator, get_reg(c -> WBus, 8));
-  else if (control_string_change(c, Load_B_bar)) reg_assign(c -> BReg, get_reg(c -> WBus, 8));
-  else if (control_string_change(c, Load_O_bar)) printf("%s\n",get_reg(c -> WBus, 8));
-  else printf("nop\n");
-					      
+  if (control_string_change(c, Load_M_bar)) reg_assign(c -> Mar, get_reg(c -> WBus, 4, 0));
+  else if (control_string_change(c, Load_I_bar))
+    {
+      reg_assign(c -> ir -> highNibble, get_reg(c -> WBus, 4, 4));
+      reg_assign(c -> ir -> lowNibble, get_reg(c -> WBus, 4, 0));
+    }
+  else if (control_string_change(c, Load_A_bar)) reg_assign(c -> Accumulator, get_reg(c -> WBus, 8, 0));
+  else if (control_string_change(c, Load_B_bar)) reg_assign(c -> BReg, get_reg(c -> WBus, 8, 0));
+  else if (control_string_change(c, Load_O_bar))
+    {
+      printf("\n");
+      printf("***********PROGRAM OUTPUT************\n");
+      print_register(c -> WBus);
+      printf("\n\n");
+    }					      
 }
 
-int machine_cycle(computer *c, char *instruction) //goes through ring counter
+int machine_cycle(computer *c) //goes through ring counter
 {
   int status = 0;
-  //  printf("machine_cyle: ring counter = %d\n", c -> c_s -> rc);
-
-  //  clock_tick_down(c);
-  //downward clock edge stuff:
-  // ram gets address from mar
-  // add/sub of accumulator and breg
-  // update controller_sequencer instruction from instruction reg
-
+  
   if (c -> c_s -> rc < T4) reg_assign(c -> ControlBus, get_control_word_fetch(c -> c_s));
+
   else
     {
-      //need to replace instruction with something
-      if (!strcmp(get_reg(c ->c_s -> instruction, 4), "1111")) return 1;// halt
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4), "0000")) //lda
+      if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "1111")) return 1;// halt
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0000")) //lda
 	{
 	  reg_assign(c -> ControlBus, get_control_word_lda(c -> c_s));
 	}
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4), "0001")) //add
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0001")) //add
 	{
 	  reg_assign(c -> ControlBus, get_control_word_add(c -> c_s));
 	}
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4), "0010")) //sub
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0010")) //sub
 	{
 	  reg_assign(c -> ControlBus, get_control_word_sub(c -> c_s));
 	}
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4), "1110")) //Out
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "1110")) //Out
 	{
 	  reg_assign(c -> ControlBus, get_control_word_out(c -> c_s));
 	}
-      else printf("should not be here machine_cycle");
+      else printf("Error in machine cycle: no matching instruction found\n");
 
     }
-  
-  clock_tick_up(c); //things happen on upward clock edge
-  //upward clock edge stuff:
-  // increment pc
-  // send to bus
-  // recieve from bus
-  
-  (c -> c_s -> rc == T6) ? c -> c_s -> rc = T1: c -> c_s -> rc++; //increment ring counter
+
+  printf("T = %d:\n", c->c_s->rc+1);
+  printf("  Control Bus: "); print_register(c -> ControlBus); printf("\n");
+  clock_tick_up(c);
+  printf("  W Bus:       "); print_register(c -> WBus); printf("\n");
+
+  //increment ring counter
+  if (c -> c_s -> rc == T6)
+    {
+      c -> c_s -> rc = T1;
+      print_state(c);
+    }
+  else c -> c_s -> rc++; 
+
   return status;
 }
 
 int run_program(computer *c)
 {
-  reg_assign(c -> c_s -> instruction, "1111");
   while (c -> PC < PCMAX) //perhaps we want to control the clock ticks
     {
-      printf("run program: PC = %d\n", c->PC);
-      if (machine_cycle(c, "1110")) break;
+      if (machine_cycle(c )) break;
     }
   return 0;
 }
   
 int main()
 {
-  //perhaps place in init_computer function
-
-  //  bus *Wbus = init_register(8); //perhaps we should abstract the bus as a register that is always accessable
   /*
   reg *a = init_register(8);
   reg *b = init_register(8);
-  reg_assign(a, "10101010");
-  reg_assign(b, "10101010");
+  reg_assign(a, "00111100");
+  reg_assign(b, "00100000");
   adder_subtracter as;
   as.BReg = b;
   as.Accumulator = a;
-  subtraction(&as);
-  */
-  //  ProgramCounter pc = 14;
-  //  printf("%s", get_PC(pc));
-  
-
-  /*
-  RAM *test = init_RAM(16, 8);
-  RAM_assign(test, "0010", "00000001");
-  RAM_assign(test, "1101", "10100101");
-  print_RAM(test);
+  print_register(subtraction(&as)); printf("\n");
   */
   
   int status = 0;
   computer *SAP1 = malloc(sizeof(computer)); 
   
   status = boot_computer(SAP1);
-  //  status = load_instructions("filename", SAP1);
+  status = load_instructions("filename", SAP1);
   status = run_program(SAP1);
   //  status = shutdown_computer(SAP1);
   
-  
-  /*
-  reg_assign(Accumulator, "01011010");
-  print_register(Accumulator);
-  reg_assign(Accumulator, "1111"); //right now the behaviour overwrites non-specified digits with zeros
-  print_register(Accumulator);
-  */
   return 0;
 }

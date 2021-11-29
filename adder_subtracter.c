@@ -58,34 +58,27 @@ reg* addition(adder_subtracter *as)
 
 reg* subtraction(adder_subtracter *as)
 {
-  reg* BRegComp = init_register(as -> BReg -> size);
+  //reg* BRegComp = init_register(as -> BReg -> size);
   char *val = malloc(8);
-
-  for (int i = 0; i < BRegComp -> size; i++)
+  int add_flag = 1;
+  for (int i = 0; i < as -> BReg -> size; i++)
     {
-      if (reg_access(as->BReg, i)) val[BRegComp -> size - i - 1] = '0';
-      else val[BRegComp -> size - i - 1] = '1';
-    } 
-
-  reg_assign(BRegComp, val);
-  print_register(BRegComp);
-  
-  reg *temp = init_register(8);
-  
-  char carry = 0x0;
-  
-  for (int i = 0; i < temp -> size; i++)
-    {
-      char v = add_bits(as -> Accumulator, BRegComp, i, &carry);
-      //      printf("%d %d %d\n", reg_access(as -> Accumulator, i), reg_access(as -> BReg, i), (int)carry);
-      //      printf("%c", v);
-      val[8-i-1] = v;
-      
+      int loc = as -> BReg -> size - i - 1;
+      if (add_flag)
+	{
+	  val[loc] = '0';
+	  if (reg_access(as->BReg, i))
+	    {
+	      add_flag = 0;
+	      val[loc] = '1';
+	    }
+	}
+      else {
+	if (reg_access(as->BReg, i)) val[loc] = '0';
+	else val[loc] = '1';
+      }
     }
-
-  reg_assign(temp, val);
-  //  print_register(temp);
-  free(val);
-  del_register(BRegComp);
-  return temp;
+  printf("twos complement val %s\n", val);
+  reg_assign(as -> BReg, val);
+  return addition(as);
 }

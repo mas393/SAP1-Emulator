@@ -2,16 +2,17 @@
 #include <stdlib.h>
 #include "registers.h"
 
+
 RAM* init_RAM(int s, int b)
 {
-  RAM* mem;
+  RAM* mem = malloc(sizeof(RAM));
   mem -> blocks = s;
   mem -> block_size = b; //in bits
   mem -> vals = malloc(s*(b/8 + 1));
   return mem;
 }
 
-void RAM_assign(RAM *mem, char *loc_nibble, char *data)
+void set_RAM(RAM *mem, char *loc_nibble, char *data)
 {
   int block = strtol(loc_nibble, 0, 2);
   char v = strtol(data, 0, 2);
@@ -21,12 +22,13 @@ void RAM_assign(RAM *mem, char *loc_nibble, char *data)
 char* get_RAM(RAM *mem)
 {
   char *val = malloc(mem -> block_size);
-  int block = strtol(get_reg(mem -> cur_addr, 4), 0, 2);
+  int block = strtol(get_reg(mem -> cur_addr, 4, 0), 0, 2);
+  //int block = strtol("0010", 0, 2);
   char c = mem -> vals[block];
 
-  for (int j= mem -> block_size - 1; j >= 0; j--) // j is accessing the bit in range 0 to blocksize
+  for (int j = 0; j < mem -> block_size; j++)
     {
-      val[mem -> block_size - 1 - j] = (c >> j & 0x01);
+      val[j] = ((c >> (mem -> block_size - 1 - j)) & 0x1) ? '1': '0';
     }
   
   return val;

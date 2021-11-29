@@ -1,3 +1,4 @@
+/*
 #include "registers.h"
 
 typedef struct RAM
@@ -17,3 +18,4 @@ char RAM_access(RAM*, char*);
 void print_RAM(RAM*);
 
 void del_RAM(RAM*);
+*/
