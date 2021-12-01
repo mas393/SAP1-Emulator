@@ -6,19 +6,36 @@
 #include "adder_subtracter.h"
 
 #define PCMAX 15
+#define CONTROL_WORD "001111100011"
+#define LDA "0000"
+#define ADD "0001"
+#define SUB "0010"
+#define OUT "1110"
+#define HLT "1111"
 
 // TODO: reorganize .h and .c hierarchy 
-// TODO: Perhaps implement a constant string that contains the base control word
-// TODO: implement computer shutdown function to free all components
+// TODO: implement computer shutdown function to free all components and check in valgrind
+// BUG: when run in terminal, program instruction register lowNibble and highNibble has a bunch
+//      of garbage attached to it that makes the machine_cycle() fxn not be able to find the instruction.
+//      When output it directed to an output text file this bug does not occur.
 
 typedef int ProgramCounter;
 typedef reg bus;
 
+char* bit_string_from_int(int in, int s)
+{
+  char *val = malloc(s);
+  for (int i = 0; i < s; i++) val[s-i-1] = ((char)in >> i & 0x1 ? '1': '0');
+  return val;			
+}
 char* get_PC(ProgramCounter PC)
 {
+  return bit_string_from_int(PC, 4);
+  /*
   char *val = malloc(4);
   for (int i = 0; i < 4; i++) val[4-i-1] = ((char)PC >> i & 0x1 ? '1': '0');
   return val;			
+  */
 }
 
 enum control_word_bits {
@@ -55,42 +72,42 @@ controller_sequencer* init_controller_sequencer()
 
 char* get_control_word_fetch(controller_sequencer *cs)
 {
-  
-  char *val = malloc(12);
-  memcpy(val, "001111100011", 12);  //default control word with everything 
+  char *cw = malloc(12);
+  memcpy(cw, CONTROL_WORD, 12);
+
   switch (cs -> rc)
     {
     case T1:
-      val[Enable_P] = '1';
-      val[Load_M_bar] = '0';
+      cw[Enable_P] = '1';
+      cw[Load_M_bar] = '0';
       break;
     case T2:
-      val[C_P] = '1';
+      cw[C_P] = '1';
       break;
     case T3:
-      val[CE_bar] = '0';
-      val[Load_I_bar] = '0';
+      cw[CE_bar] = '0';
+      cw[Load_I_bar] = '0';
       break;
     default:
       printf("should not be here control_word_fetch");
     };
-  return val;
+  return cw;
 }
 
 char* get_control_word_lda(controller_sequencer *cs)
 {
-  char *val = malloc(12);
-  memcpy(val, "001111100011", 12); //default control word with everything
+  char *cw = malloc(12);
+  memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
   switch (cs -> rc)
     {
     case T4:
-      val[Load_M_bar] = '0';
-      val[Enable_I_bar] = '0';
+      cw[Load_M_bar] = '0';
+      cw[Enable_I_bar] = '0';
       break;
     case T5:
-      val[CE_bar] = '0';
-      val[Load_A_bar] = '0';
+      cw[CE_bar] = '0';
+      cw[Load_A_bar] = '0';
       break;
     case T6: //nop
       break;
@@ -98,71 +115,71 @@ char* get_control_word_lda(controller_sequencer *cs)
       printf("should not be here lda");
     }
   
-  return val;  
+  return cw;  
 }
 
 char* get_control_word_add(controller_sequencer *cs)
 {
-  char *val = malloc(12);
-  memcpy(val, "001111100011", 12); //default control word with everything
+  char *cw = malloc(12);
+  memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
     switch (cs -> rc)
     {
     case T4:
-      val[Load_M_bar] = '0';
-      val[Enable_I_bar] = '0';
+      cw[Load_M_bar] = '0';
+      cw[Enable_I_bar] = '0';
       break;
     case T5:
-      val[CE_bar] = '0';
-      val[Load_B_bar] = '0';
+      cw[CE_bar] = '0';
+      cw[Load_B_bar] = '0';
       break;
     case T6:
-      val[Load_A_bar] = '0';
-      val[Enable_U] = '1';
+      cw[Load_A_bar] = '0';
+      cw[Enable_U] = '1';
       break;
     default:
       printf("should not be here add");
     }
     
-  return val;  
+  return cw;  
 }
 
 char* get_control_word_sub(controller_sequencer *cs)
 {
-  char *val = malloc(12);
-  memcpy(val, "001111100011", 12); //default control word with everything
+  char *cw = malloc(12);
+  memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
     switch (cs -> rc)
     {
     case T4:
-      val[Load_M_bar] = '0';
-      val[Enable_I_bar] = '0';
+      cw[Load_M_bar] = '0';
+      cw[Enable_I_bar] = '0';
       break;
     case T5:
-      val[CE_bar] = '0';
-      val[Load_B_bar] = '0';
+      cw[CE_bar] = '0';
+      cw[Load_B_bar] = '0';
       break;
     case T6: 
-      val[Load_A_bar] = '0';
-      val[S_U] = '1';
+      cw[Load_A_bar] = '0';
+      cw[S_U] = '1';
       break;
     default:
       printf("should not be here sub");
     }
     
-  return val;  
+  return cw;  
 }
 
 char* get_control_word_out(controller_sequencer *cs)
 {
-  char *val = malloc(12);
-  memcpy(val, "001111100011", 12); //default control word with everything
+  char *cw = malloc(12);
+  memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
   switch (cs -> rc)
     {
     case T4:
-      val[Enable_A] = '1';
-      val[Load_O_bar] = '0';
+      cw[Enable_A] = '1';
+      cw[Load_O_bar] = '0';
       break;
     case T5: //nop
       break;
@@ -172,7 +189,7 @@ char* get_control_word_out(controller_sequencer *cs)
       printf("should not be here out");
     }
   
-  return val;
+  return cw;
 }
 
 
@@ -239,41 +256,63 @@ int boot_computer(computer *c)
   return 0;
 }
 
-/*
+
 int shutdown_computer(computer *c)
 {
   del_register(c -> Accumulator);
   del_register(c -> BReg);
-  del_register(c -> InstructionReg);
+  //  del_register(c -> ir);
+  del_register(c -> Mar);
+  del_RAM(c -> Mem);
+  del_register(c -> WBus);
+  del_register(c -> ControlBus);
   free(c);
   return 0;
 }
-*/
+
 
 int load_instructions(char *f, computer *c)
 {
-  //instructions
-  set_RAM(c -> Mem, "0000", "00001001"); //lda 9h
-  set_RAM(c -> Mem, "0001", "00011010"); //add ah
-  set_RAM(c -> Mem, "0010", "00011011"); //add bh
-  set_RAM(c -> Mem, "0011", "00101100"); //sub ch
-  set_RAM(c -> Mem, "0100", "11100000"); //out
-  set_RAM(c -> Mem, "0101", "11110000"); //hlt
-  //data
-  set_RAM(c -> Mem, "1001", "00010000");
-  set_RAM(c -> Mem, "1010", "00010100");
-  set_RAM(c -> Mem, "1011", "00011000");
-  set_RAM(c -> Mem, "1100", "00100000");
-  //will parse assembly in f and store in c -> mem
+  FILE *fin = fopen(f, "r");
+
+  char *line = malloc(20);
+  
+  while (fgets(line, 20, fin))
+    {
+      int loc = 0;
+      int data = 0;
+      char *instruction = malloc(3);
+
+      
+      sscanf(line, "%xH %s %xH\n", &loc, instruction, &data);
+      
+      char *d  = bit_string_from_int(data, 8);
+      //      *(d + 7) = '\0';
+      
+      if (!strcmp(instruction, "LDA")) memcpy(d, LDA, 4);
+      else if (!strcmp(instruction, "ADD")) memcpy(d, ADD, 4);
+      else if (!strcmp(instruction, "SUB")) memcpy(d, SUB, 4);
+      else if (!strcmp(instruction, "OUT")) memcpy(d, OUT, 4);
+      else if (!strcmp(instruction, "HLT")) memcpy(d, HLT, 4);
+      else
+	{
+	  sscanf(instruction, "%xH", &data);
+	  d = bit_string_from_int(data, 8);
+	}
+	     
+      set_RAM(c -> Mem, bit_string_from_int(loc, 4), d);      
+    }
+
+  fclose(fin);
+  
   return 0;
 }
 
 
 int control_string_change(computer *c, int b)
 {
-  char val[] = "001111100011";
   char test = reg_access(c -> ControlBus, c -> ControlBus -> size - b - 1) ? '1':'0';
-  return (test != val[b]);
+  return (test != CONTROL_WORD[b]);
 }
 
 void clock_tick_up(computer *c)
@@ -292,6 +331,7 @@ void clock_tick_up(computer *c)
   if (control_string_change(c, Load_M_bar)) reg_assign(c -> Mar, get_reg(c -> WBus, 4, 0));
   else if (control_string_change(c, Load_I_bar))
     {
+      //      printf("WBUS is %s lowNibble is %s highNible is %s\n", get_reg(c -> WBus, 8, 0), get_reg(c-> WBus, 4, 0), get_reg(c -> WBus, 4, 4));
       reg_assign(c -> ir -> highNibble, get_reg(c -> WBus, 4, 4));
       reg_assign(c -> ir -> lowNibble, get_reg(c -> WBus, 4, 0));
     }
@@ -314,25 +354,17 @@ int machine_cycle(computer *c) //goes through ring counter
 
   else
     {
-      if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "1111")) return 1;// halt
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0000")) //lda
-	{
-	  reg_assign(c -> ControlBus, get_control_word_lda(c -> c_s));
-	}
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0001")) //add
-	{
-	  reg_assign(c -> ControlBus, get_control_word_add(c -> c_s));
-	}
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0010")) //sub
-	{
-	  reg_assign(c -> ControlBus, get_control_word_sub(c -> c_s));
-	}
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "1110")) //Out
-	{
-	  reg_assign(c -> ControlBus, get_control_word_out(c -> c_s));
-	}
-      else printf("Error in machine cycle: no matching instruction found\n");
-
+      if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), HLT)) return 1;
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0000"))  //LDA
+	reg_assign(c -> ControlBus, get_control_word_lda(c -> c_s));
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), ADD))  
+	reg_assign(c -> ControlBus, get_control_word_add(c -> c_s));
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), SUB)) 
+	reg_assign(c -> ControlBus, get_control_word_sub(c -> c_s));
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), OUT)) 
+	reg_assign(c -> ControlBus, get_control_word_out(c -> c_s));
+      else printf("Error in machine cycle: no matching instruction found for %s\n", get_reg(c->c_s-> instruction, 4, 0));
+      
     }
 
   printf("T = %d:\n", c->c_s->rc+1);
@@ -344,6 +376,7 @@ int machine_cycle(computer *c) //goes through ring counter
   if (c -> c_s -> rc == T6)
     {
       c -> c_s -> rc = T1;
+      //      return 1;
       print_state(c);
     }
   else c -> c_s -> rc++; 
@@ -353,6 +386,7 @@ int machine_cycle(computer *c) //goes through ring counter
 
 int run_program(computer *c)
 {
+  print_RAM(c -> Mem);
   while (c -> PC < PCMAX) //perhaps we want to control the clock ticks
     {
       if (machine_cycle(c )) break;
@@ -376,9 +410,10 @@ int main()
   computer *SAP1 = malloc(sizeof(computer)); 
   
   status = boot_computer(SAP1);
-  status = load_instructions("filename", SAP1);
+  status = load_instructions("test.txt", SAP1);
+  //  print_RAM(SAP1->Mem);
   status = run_program(SAP1);
-  //  status = shutdown_computer(SAP1);
+  status = shutdown_computer(SAP1);
 
   return 0;
 }

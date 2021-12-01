@@ -25,6 +25,7 @@ char* get_reg(reg *r, int s, int ofset)
 {
   char *out = malloc(s);
   for (int i = r -> size - 1; i >= ofset; i--) out[r -> size - 1 - i] = reg_access(r, i) ? '1': '0';
+  // out[s+1] = '\0';
   return out;
 }
 

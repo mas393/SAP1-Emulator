@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "registers.h"
 
 
@@ -16,7 +17,8 @@ void set_RAM(RAM *mem, char *loc_nibble, char *data)
 {
   int block = strtol(loc_nibble, 0, 2);
   char v = strtol(data, 0, 2);
-  mem -> vals[block] = v;
+  memcpy(mem -> vals + block, &v, 1);
+  //mem -> vals[block] = v;
 }
 
 char* get_RAM(RAM *mem)
