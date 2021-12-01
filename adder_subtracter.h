@@ -10,6 +10,6 @@ adder_subtracter* init_adder_subtracter();
 
 char add_bits(reg*, reg*, int, char*);
 
-reg* addition(adder_subtracter*);
+char* addition(adder_subtracter*);
 
-reg* subtraction(adder_subtracter*);
+char* subtraction(adder_subtracter*);

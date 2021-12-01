@@ -36,13 +36,12 @@ char add_bits(reg *r1, reg *r2, int bit_loc, char *carry)
   return v;
 }
 
-reg* addition(adder_subtracter *as)
+char* addition(adder_subtracter *as)
 {
   //may have to pass in bus or provide it to adder_subtracter st temp is not lost
-  reg* temp = init_register(8);
   char carry = 0x0;
   char *val = malloc(8);
-  for (int i = 0; i < temp -> size; i++)
+  for (int i = 0; i < as -> BReg -> size; i++)
     {
       char v = add_bits(as -> Accumulator, as -> BReg, i, &carry);
       //      printf("%d %d %d\n", reg_access(as -> Accumulator, i), reg_access(as -> BReg, i), (int)carry);
@@ -50,13 +49,12 @@ reg* addition(adder_subtracter *as)
       val[8-i-1] = v;
       
     }
-  reg_assign(temp, val);
+  
   //  print_register(temp);
-  free(val);
-  return temp;
+  return val;
 }
 
-reg* subtraction(adder_subtracter *as)
+char* subtraction(adder_subtracter *as)
 {
   //reg* BRegComp = init_register(as -> BReg -> size);
   char *val = malloc(8);
@@ -78,7 +76,7 @@ reg* subtraction(adder_subtracter *as)
 	else val[loc] = '1';
       }
     }
-  printf("twos complement val %s\n", val);
+  //  printf("twos complement val %s\n", val);
   reg_assign(as -> BReg, val);
   return addition(as);
 }

@@ -8,10 +8,6 @@
 #define PCMAX 15
 
 // TODO: reorganize .h and .c hierarchy 
-// TODO: Fix subtraction function.
-//       Something about modifying the BReg in-place within the subtraction funtion is not working
-//       Subtraction demo in Main is working
-//       Maybe make addition and subtraction both return strings and then write those to WBus  
 // TODO: Perhaps implement a constant string that contains the base control word
 // TODO: implement computer shutdown function to free all components
 
@@ -148,7 +144,6 @@ char* get_control_word_sub(controller_sequencer *cs)
       break;
     case T6: 
       val[Load_A_bar] = '0';
-      val[Enable_U] = '1';
       val[S_U] = '1';
       break;
     default:
@@ -289,8 +284,8 @@ void clock_tick_up(computer *c)
   if (control_string_change(c, Enable_P)) reg_assign(c -> WBus, get_PC(c -> PC));
   else if (control_string_change(c, CE_bar)) reg_assign(c -> WBus, get_RAM(c -> Mem));
   else if (control_string_change(c, Enable_I_bar)) reg_assign(c -> WBus, get_reg(c -> ir -> lowNibble, 4, 0));
-  else if (control_string_change(c, Enable_U)) reg_assign(c -> WBus, get_reg(addition(c -> as), 8, 0)); //could just return char from additon/subtraction
-  else if (control_string_change(c, S_U)) reg_assign(c -> WBus, get_reg(subtraction(c -> as), 8, 0)); //could just return char from additon/subtraction
+  else if (control_string_change(c, Enable_U)) reg_assign(c -> WBus, addition(c -> as)); //could just return char from additon/subtraction
+  else if (control_string_change(c, S_U)) reg_assign(c -> WBus, subtraction(c -> as)); //could just return char from additon/subtraction
   else if (control_string_change(c, Enable_A)) reg_assign(c -> WBus, get_reg(c -> Accumulator, 8, 0));
 
   //  get bus
@@ -375,9 +370,8 @@ int main()
   adder_subtracter as;
   as.BReg = b;
   as.Accumulator = a;
-  print_register(subtraction(&as)); printf("\n");
+  printf("out %s\n", addition(&as));
   */
-  
   int status = 0;
   computer *SAP1 = malloc(sizeof(computer)); 
   
@@ -385,6 +379,6 @@ int main()
   status = load_instructions("filename", SAP1);
   status = run_program(SAP1);
   //  status = shutdown_computer(SAP1);
-  
+
   return 0;
 }
