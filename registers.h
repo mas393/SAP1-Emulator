@@ -27,7 +27,7 @@ typedef struct RAM
 
 RAM* init_RAM(int, int);
 
-void set_RAM(RAM*, char*, char*);
+void set_RAM(RAM*, char*, char*, char*);
 
 char* get_RAM(RAM*);
 

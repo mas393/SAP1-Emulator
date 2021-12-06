@@ -21,11 +21,11 @@ int reg_access(reg *r, int bit_num) // lsb has bit_num = 0
   return (r -> vals)[bit_num/8] >> (bit_num % 8) & 0x01;
 }
 
-char* get_reg(reg *r, int s, int ofset) 
+char* get_reg(reg *r, int s, int offset) 
 {
   char *out = malloc(s);
-  for (int i = r -> size - 1; i >= ofset; i--) out[r -> size - 1 - i] = reg_access(r, i) ? '1': '0';
-  // out[s+1] = '\0';
+  for (int i = s - 1; i >= 0; i--) out[s - 1 - i] = reg_access(r, i-offset) ? '1': '0';
+  *(out + s) = '\0';
   return out;
 }
 

@@ -44,19 +44,15 @@ char* addition(adder_subtracter *as)
   for (int i = 0; i < as -> BReg -> size; i++)
     {
       char v = add_bits(as -> Accumulator, as -> BReg, i, &carry);
-      //      printf("%d %d %d\n", reg_access(as -> Accumulator, i), reg_access(as -> BReg, i), (int)carry);
-      //      printf("%c", v);
       val[8-i-1] = v;
       
     }
   
-  //  print_register(temp);
   return val;
 }
 
 char* subtraction(adder_subtracter *as)
 {
-  //reg* BRegComp = init_register(as -> BReg -> size);
   char *val = malloc(8);
   int add_flag = 1;
   for (int i = 0; i < as -> BReg -> size; i++)
@@ -76,7 +72,6 @@ char* subtraction(adder_subtracter *as)
 	else val[loc] = '1';
       }
     }
-  //  printf("twos complement val %s\n", val);
   reg_assign(as -> BReg, val);
   return addition(as);
 }

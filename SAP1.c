@@ -15,9 +15,6 @@
 
 // TODO: reorganize .h and .c hierarchy 
 // TODO: implement computer shutdown function to free all components and check in valgrind
-// BUG: when run in terminal, program instruction register lowNibble and highNibble has a bunch
-//      of garbage attached to it that makes the machine_cycle() fxn not be able to find the instruction.
-//      When output it directed to an output text file this bug does not occur.
 
 typedef int ProgramCounter;
 typedef reg bus;
@@ -31,11 +28,6 @@ char* bit_string_from_int(int in, int s)
 char* get_PC(ProgramCounter PC)
 {
   return bit_string_from_int(PC, 4);
-  /*
-  char *val = malloc(4);
-  for (int i = 0; i < 4; i++) val[4-i-1] = ((char)PC >> i & 0x1 ? '1': '0');
-  return val;			
-  */
 }
 
 enum control_word_bits {
@@ -244,7 +236,7 @@ int boot_computer(computer *c)
   c -> ir = init_InstructionReg();
   c -> Mar = init_register(4);
   c -> Mem = init_RAM(16, 8);
-  c -> Mem -> cur_addr = c -> Mar; //
+  c -> Mem -> cur_addr = c -> Mar; 
   c -> WBus = init_register(8);
   c -> ControlBus = init_register(12);
   c -> as = init_adder_subtracter();
@@ -286,21 +278,24 @@ int load_instructions(char *f, computer *c)
       
       sscanf(line, "%xH %s %xH\n", &loc, instruction, &data);
       
-      char *d  = bit_string_from_int(data, 8);
-      //      *(d + 7) = '\0';
+      char *d  = bit_string_from_int(data, 4);
+      char e[4];
       
-      if (!strcmp(instruction, "LDA")) memcpy(d, LDA, 4);
-      else if (!strcmp(instruction, "ADD")) memcpy(d, ADD, 4);
-      else if (!strcmp(instruction, "SUB")) memcpy(d, SUB, 4);
-      else if (!strcmp(instruction, "OUT")) memcpy(d, OUT, 4);
-      else if (!strcmp(instruction, "HLT")) memcpy(d, HLT, 4);
+      if (!strcmp(instruction, "LDA")) memcpy(e, LDA, 4); 
+      else if (!strcmp(instruction, "ADD")) memcpy(e, ADD, 4); 
+      else if (!strcmp(instruction, "SUB")) memcpy(e, SUB, 4); 
+      else if (!strcmp(instruction, "OUT")) memcpy(e, OUT, 4); 
+      else if (!strcmp(instruction, "HLT")) memcpy(e, HLT, 4); 
       else
 	{
+	  
 	  sscanf(instruction, "%xH", &data);
 	  d = bit_string_from_int(data, 8);
+	  memcpy(e, "0000", 4); //set to 0000 so set_Ram works with e and d vals
+	  printf("data in %s\n", d);
 	}
-	     
-      set_RAM(c -> Mem, bit_string_from_int(loc, 4), d);      
+      
+      set_RAM(c -> Mem, bit_string_from_int(loc, 4), e,d);      
     }
 
   fclose(fin);
@@ -331,7 +326,6 @@ void clock_tick_up(computer *c)
   if (control_string_change(c, Load_M_bar)) reg_assign(c -> Mar, get_reg(c -> WBus, 4, 0));
   else if (control_string_change(c, Load_I_bar))
     {
-      //      printf("WBUS is %s lowNibble is %s highNible is %s\n", get_reg(c -> WBus, 8, 0), get_reg(c-> WBus, 4, 0), get_reg(c -> WBus, 4, 4));
       reg_assign(c -> ir -> highNibble, get_reg(c -> WBus, 4, 4));
       reg_assign(c -> ir -> lowNibble, get_reg(c -> WBus, 4, 0));
     }
@@ -349,13 +343,13 @@ void clock_tick_up(computer *c)
 int machine_cycle(computer *c) //goes through ring counter
 {
   int status = 0;
-  
+    
   if (c -> c_s -> rc < T4) reg_assign(c -> ControlBus, get_control_word_fetch(c -> c_s));
 
   else
     {
       if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), HLT)) return 1;
-      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), "0000"))  //LDA
+      else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), LDA))
 	reg_assign(c -> ControlBus, get_control_word_lda(c -> c_s));
       else if (!strcmp(get_reg(c ->c_s -> instruction, 4, 0), ADD))  
 	reg_assign(c -> ControlBus, get_control_word_add(c -> c_s));
@@ -369,6 +363,7 @@ int machine_cycle(computer *c) //goes through ring counter
 
   printf("T = %d:\n", c->c_s->rc+1);
   printf("  Control Bus: "); print_register(c -> ControlBus); printf("\n");
+
   clock_tick_up(c);
   printf("  W Bus:       "); print_register(c -> WBus); printf("\n");
 
@@ -376,7 +371,6 @@ int machine_cycle(computer *c) //goes through ring counter
   if (c -> c_s -> rc == T6)
     {
       c -> c_s -> rc = T1;
-      //      return 1;
       print_state(c);
     }
   else c -> c_s -> rc++; 
@@ -386,7 +380,7 @@ int machine_cycle(computer *c) //goes through ring counter
 
 int run_program(computer *c)
 {
-  print_RAM(c -> Mem);
+  //print_RAM(c -> Mem);
   while (c -> PC < PCMAX) //perhaps we want to control the clock ticks
     {
       if (machine_cycle(c )) break;
@@ -396,24 +390,14 @@ int run_program(computer *c)
   
 int main()
 {
-  /*
-  reg *a = init_register(8);
-  reg *b = init_register(8);
-  reg_assign(a, "00111100");
-  reg_assign(b, "00100000");
-  adder_subtracter as;
-  as.BReg = b;
-  as.Accumulator = a;
-  printf("out %s\n", addition(&as));
-  */
+
   int status = 0;
   computer *SAP1 = malloc(sizeof(computer)); 
   
   status = boot_computer(SAP1);
   status = load_instructions("test.txt", SAP1);
-  //  print_RAM(SAP1->Mem);
   status = run_program(SAP1);
-  status = shutdown_computer(SAP1);
+  //  status = shutdown_computer(SAP1);
 
   return 0;
 }

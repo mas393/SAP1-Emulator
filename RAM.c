@@ -13,11 +13,14 @@ RAM* init_RAM(int s, int b)
   return mem;
 }
 
-void set_RAM(RAM *mem, char *loc_nibble, char *data)
+void set_RAM(RAM *mem, char *loc_nibble, char *inst, char *data)
 {
   int block = strtol(loc_nibble, 0, 2);
-  char v = strtol(data, 0, 2);
-  memcpy(mem -> vals + block, &v, 1);
+  unsigned char v = strtol(data, 0, 2);
+  unsigned char h = strtol(inst, 0, 2);
+  h = h << 4;
+  h += v;
+  memcpy(mem -> vals + block, &h, 1);
   //mem -> vals[block] = v;
 }
 
