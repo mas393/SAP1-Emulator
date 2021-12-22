@@ -1,3 +1,6 @@
+#ifndef REGISTER_H
+#define REGISTER_H
+
 typedef struct reg
 {
   //probably need to include load and enable bits
@@ -17,21 +20,4 @@ void print_register(reg*);
 
 void del_register(reg *);
 
-typedef struct RAM
-{
-  int blocks;
-  int block_size;
-  reg *cur_addr;
-  char *vals;
-} RAM;
-
-RAM* init_RAM(int, int);
-
-void set_RAM(RAM*, char*, char*, char*);
-
-char* get_RAM(RAM*);
-
-void print_RAM(RAM*);
-
-void del_RAM(RAM*);
-
+#endif

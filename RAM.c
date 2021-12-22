@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "registers.h"
+#include "RAM.h"
 
 
 RAM* init_RAM(int s, int b)
@@ -21,14 +21,12 @@ void set_RAM(RAM *mem, char *loc_nibble, char *inst, char *data)
   h = h << 4;
   h += v;
   memcpy(mem -> vals + block, &h, 1);
-  //mem -> vals[block] = v;
 }
 
 char* get_RAM(RAM *mem)
 {
   char *val = malloc(mem -> block_size);
   int block = strtol(get_reg(mem -> cur_addr, 4, 0), 0, 2);
-  //int block = strtol("0010", 0, 2);
   char c = mem -> vals[block];
 
   for (int j = 0; j < mem -> block_size; j++)
