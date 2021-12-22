@@ -26,7 +26,9 @@ void set_RAM(RAM *mem, char *loc_nibble, char *inst, char *data)
 char* get_RAM(RAM *mem)
 {
   char *val = malloc(mem -> block_size);
-  int block = strtol(get_reg(mem -> cur_addr, 4, 0), 0, 2);
+  char *regcpy = get_reg(mem->cur_addr, 4, 0);
+  int block = strtol(regcpy, 0, 2);
+  free(regcpy);
   char c = mem -> vals[block];
 
   for (int j = 0; j < mem -> block_size; j++)

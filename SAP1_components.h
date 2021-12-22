@@ -19,6 +19,7 @@ typedef struct controller_sequencer
 } controller_sequencer;
 
 controller_sequencer* init_controller_sequencer();
+//void del_controller_sequencer(controller_sequencer*);
 
 enum control_word_bits {
   C_P,
@@ -59,7 +60,7 @@ typedef struct InstructionReg
 } InstructionReg;
 
 InstructionReg* init_InstructionReg();
-
+void del_InstructionReg(InstructionReg*);
 
 typedef struct adder_subtracter
 {
@@ -68,6 +69,7 @@ typedef struct adder_subtracter
 } adder_subtracter;
 
 adder_subtracter* init_adder_subtracter();
+//void del_adder_subtracter(adder_subtracter*);
 
 char add_bits(reg*, reg*, int, char*);
 

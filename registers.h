@@ -10,7 +10,7 @@ typedef struct reg
 
 reg* init_register(int);
 
-void reg_assign(reg*, char*);
+void reg_assign(reg*, char*, int);
 
 int reg_access(reg*, int);
 

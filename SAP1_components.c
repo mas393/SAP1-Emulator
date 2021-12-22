@@ -155,6 +155,13 @@ InstructionReg* init_InstructionReg()
   return temp;
 }
 
+void del_InstructionReg(InstructionReg *ir)
+{
+  del_register(ir -> lowNibble);
+  del_register(ir -> highNibble);
+  free(ir);
+}
+
 adder_subtracter* init_adder_subtracter()
 {
   adder_subtracter *temp;
@@ -225,6 +232,6 @@ char* subtraction(adder_subtracter *as)
 	else val[loc] = '1';
       }
     }
-  reg_assign(as -> BReg, val);
+  reg_assign(as -> BReg, val, 1);
   return addition(as);
 }
