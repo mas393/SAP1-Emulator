@@ -9,7 +9,6 @@
 
 // TODO: write readme and comment functions
 // TODO: look into using bit fields
-// TODO: rewrite functions that return char* to modify existing char* array in place
 // TODO: fix valgrind errors
 
 typedef struct computer
@@ -212,6 +211,7 @@ int machine_cycle(computer *c) //goes through ring counter
       if (!strcmp(ins, HLT))
 	{
 	  free(ins);
+	  free(updated_cw);
 	  return 1;
 	}
       else if (!strcmp(ins, LDA)) get_control_word_lda(c -> c_s, updated_cw);
