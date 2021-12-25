@@ -36,18 +36,18 @@ enum control_word_bits {
   Load_O_bar
 };
 
-char* get_control_word_fetch(controller_sequencer*);
-char* get_control_word_lda(controller_sequencer*);
-char* get_control_word_add(controller_sequencer*);
-char* get_control_word_sub(controller_sequencer*);
-char* get_control_word_out(controller_sequencer*);
+void get_control_word_fetch(controller_sequencer*, char*);
+void get_control_word_lda(controller_sequencer*, char*);
+void get_control_word_add(controller_sequencer*, char*);
+void get_control_word_sub(controller_sequencer*, char*);
+void get_control_word_out(controller_sequencer*, char*);
 
-char* bit_string_from_int(int, int);
+void bit_string_from_int(int, int, char*);
 
 
 typedef int ProgramCounter;
 
-char* get_PC(ProgramCounter);
+void get_PC(ProgramCounter, char*);
 
   
 typedef reg bus;
@@ -73,9 +73,9 @@ adder_subtracter* init_adder_subtracter();
 
 char add_bits(reg*, reg*, int, char*);
 
-char* addition(adder_subtracter*);
+void addition(adder_subtracter*, char*);
 
-char* subtraction(adder_subtracter*);
+void subtraction(adder_subtracter*, char*);
 
 
 #endif

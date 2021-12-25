@@ -10,11 +10,11 @@ typedef struct reg
 
 reg* init_register(int);
 
-void reg_assign(reg*, char*, int);
+void reg_assign(reg*, char*);
 
 int reg_access(reg*, int);
 
-char* get_reg(reg*, int s, int o);
+void get_reg(reg*, int, int, char*);
 
 void print_register(reg*);
 

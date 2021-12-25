@@ -23,20 +23,18 @@ void set_RAM(RAM *mem, char *loc_nibble, char *inst, char *data)
   memcpy(mem -> vals + block, &h, 1);
 }
 
-char* get_RAM(RAM *mem)
+void get_RAM(RAM *mem, char *val)
 {
-  char *val = malloc(mem -> block_size);
-  char *regcpy = get_reg(mem->cur_addr, 4, 0);
+  char *regcpy = malloc(4);
+  get_reg(mem->cur_addr, 4, 0, regcpy);
   int block = strtol(regcpy, 0, 2);
   free(regcpy);
   char c = mem -> vals[block];
-
+  
   for (int j = 0; j < mem -> block_size; j++)
     {
       val[j] = ((c >> (mem -> block_size - 1 - j)) & 0x1) ? '1': '0';
     }
-  
-  return val;
 }
 
 void print_RAM(RAM *mem)

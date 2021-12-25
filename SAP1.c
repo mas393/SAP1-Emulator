@@ -28,13 +28,13 @@ typedef struct computer
 
 
 void print_state(computer*);
-int boot_computer(computer*);
-int shutdown_computer(computer*);
-int load_instructions(char*, computer*);
+void boot_computer(computer*);
+void shutdown_computer(computer*);
+void load_instructions(char*, computer*);
 int control_string_change(computer*, int);
 void clock_tick_up(computer*);
 int machine_cycle(computer*);
-int run_program(computer*);
+void run_program(computer*);
   
 int main()
 {
@@ -62,7 +62,7 @@ void print_state(computer *c)
   printf("\n");
 }
 
-int boot_computer(computer *c)
+void boot_computer(computer *c)
 {
   c -> PC = 0;
   c -> Accumulator = init_register(8);
@@ -78,11 +78,9 @@ int boot_computer(computer *c)
   c -> as -> BReg = c -> BReg;
   c -> c_s = init_controller_sequencer();
   c -> c_s -> instruction = c -> ir -> highNibble;
-
-  return 0;
 }
 
-int shutdown_computer(computer *c)
+void shutdown_computer(computer *c)
 {
   del_register(c -> Accumulator);
   del_register(c -> BReg);
@@ -94,51 +92,50 @@ int shutdown_computer(computer *c)
   free(c -> as);
   free(c -> c_s);
   free(c);
-  return 0;
 }
 
 
-int load_instructions(char *f, computer *c)
+void load_instructions(char *f, computer *c)
 {
   FILE *fin = fopen(f, "r");
 
   char *line = malloc(20);
-  
+  //move char arrays etc out here and free below while loop
+  int loc = 0;
+  int data = 0;
+  char *instruction = malloc(3);
+  char *data_bitstring = malloc(4);
+  char *opcode = malloc(4);
+  char *mem_loc = malloc(4);
+      
   while (fgets(line, 20, fin))
-    {
-      int loc = 0;
-      int data = 0;
-      char *instruction = malloc(3);
-
+    {      
+      sscanf(line, "%xH %s %xH\n", &loc, instruction, &data); 
+      bit_string_from_int(data, 4, data_bitstring);
       
-      sscanf(line, "%xH %s %xH\n", &loc, instruction, &data);
-      
-      char *d  = bit_string_from_int(data, 4);
-      char e[4];
-      
-      if (!strcmp(instruction, "LDA")) memcpy(e, LDA, 4); 
-      else if (!strcmp(instruction, "ADD")) memcpy(e, ADD, 4); 
-      else if (!strcmp(instruction, "SUB")) memcpy(e, SUB, 4); 
-      else if (!strcmp(instruction, "OUT")) memcpy(e, OUT, 4); 
-      else if (!strcmp(instruction, "HLT")) memcpy(e, HLT, 4); 
+      if (!strcmp(instruction, "LDA")) memcpy(opcode, LDA, 4); 
+      else if (!strcmp(instruction, "ADD")) memcpy(opcode, ADD, 4); 
+      else if (!strcmp(instruction, "SUB")) memcpy(opcode, SUB, 4); 
+      else if (!strcmp(instruction, "OUT")) memcpy(opcode, OUT, 4); 
+      else if (!strcmp(instruction, "HLT")) memcpy(opcode, HLT, 4); 
       else
 	{
-	  free(d);
 	  sscanf(instruction, "%xH", &data);
-	  d = bit_string_from_int(data, 8);
-	  memcpy(e, "0000", 4); //set to 0000 so set_Ram works with e and d vals
+	  bit_string_from_int(data, 8, data_bitstring);
+	  memcpy(opcode, "0000", 4); //set to 0000 so set_Ram works with e and d vals
 	}
 
-      char *mem_loc = bit_string_from_int(loc, 4);
-      set_RAM(c -> Mem, mem_loc, e,d);
-      free(instruction);
-      free(mem_loc);
-      free(d);
+      bit_string_from_int(loc, 4, mem_loc);
+      set_RAM(c -> Mem, mem_loc, opcode, data_bitstring);
     }
-
-  fclose(fin);
+  
+  free(mem_loc);
+  free(opcode);
+  free(data_bitstring);
+  free(instruction);
   free(line);
-  return 0;
+  
+  fclose(fin);
 }
 
 int control_string_change(computer *c, int b)
@@ -152,22 +149,48 @@ void clock_tick_up(computer *c)
   if (control_string_change(c, C_P)) c -> PC++;
 
   // set bus
-  if (control_string_change(c, Enable_P)) reg_assign(c -> WBus, get_PC(c -> PC), 1);
-  else if (control_string_change(c, CE_bar)) reg_assign(c -> WBus, get_RAM(c -> Mem), 1);
-  else if (control_string_change(c, Enable_I_bar)) reg_assign(c -> WBus, get_reg(c -> ir -> lowNibble, 4, 0), 1);
-  else if (control_string_change(c, Enable_U)) reg_assign(c -> WBus, addition(c -> as), 1); //could just return char from additon/subtraction
-  else if (control_string_change(c, S_U)) reg_assign(c -> WBus, subtraction(c -> as), 1); //could just return char from additon/subtraction
-  else if (control_string_change(c, Enable_A)) reg_assign(c -> WBus, get_reg(c -> Accumulator, 8, 0), 1);
-
+  char *updated_bus = malloc(sizeof(c -> WBus));
+  if (control_string_change(c, Enable_P)) get_PC(c -> PC, updated_bus);
+  else if (control_string_change(c, CE_bar)) get_RAM(c -> Mem, updated_bus);
+  else if (control_string_change(c, Enable_I_bar)) get_reg(c -> ir -> lowNibble, 4, 0, updated_bus);
+  else if (control_string_change(c, Enable_U)) addition(c -> as, updated_bus);
+  else if (control_string_change(c, S_U)) subtraction(c -> as, updated_bus);
+  else if (control_string_change(c, Enable_A)) get_reg(c -> Accumulator, 8, 0, updated_bus);
+  // else control string did not change
+  reg_assign(c -> WBus, updated_bus);
+  free(updated_bus);
+  
   //  get bus
-  if (control_string_change(c, Load_M_bar)) reg_assign(c -> Mar, get_reg(c -> WBus, 4, 0), 1);
+  if (control_string_change(c, Load_M_bar))
+    {
+      char *updated_reg = malloc(sizeof(c -> Mar));
+      get_reg(c -> WBus, 4, 0, updated_reg);
+      reg_assign(c -> Mar, updated_reg);
+      free(updated_reg);
+    }
   else if (control_string_change(c, Load_I_bar))
     {
-      reg_assign(c -> ir -> highNibble, get_reg(c -> WBus, 4, 4), 1);
-      reg_assign(c -> ir -> lowNibble, get_reg(c -> WBus, 4, 0), 1);
+      char *updated_reg = malloc(sizeof(c -> ir -> highNibble));
+      get_reg(c -> WBus, 4, 4, updated_reg);
+      reg_assign(c -> ir -> highNibble, updated_reg);
+      get_reg(c -> WBus, 4, 0, updated_reg);
+      reg_assign(c -> ir -> lowNibble, updated_reg);
+      free(updated_reg);
     }
-  else if (control_string_change(c, Load_A_bar)) reg_assign(c -> Accumulator, get_reg(c -> WBus, 8, 0), 1);
-  else if (control_string_change(c, Load_B_bar)) reg_assign(c -> BReg, get_reg(c -> WBus, 8, 0), 1);
+  else if (control_string_change(c, Load_A_bar))
+    {
+      char *updated_reg = malloc(sizeof(c -> Accumulator));
+      get_reg(c -> WBus, 8, 0, updated_reg);
+      reg_assign(c -> Accumulator, updated_reg);
+      free(updated_reg);
+    }
+  else if (control_string_change(c, Load_B_bar))
+    {
+      char *updated_reg = malloc(sizeof(c -> BReg));
+      get_reg(c -> WBus, 8, 0, updated_reg);
+      reg_assign(c -> BReg, updated_reg);
+      free(updated_reg);
+    }
   else if (control_string_change(c, Load_O_bar))
     {
       printf("\n");
@@ -179,29 +202,27 @@ void clock_tick_up(computer *c)
 
 int machine_cycle(computer *c) //goes through ring counter
 {
-  int status = 0;
-    
-  if (c -> c_s -> rc < 3) reg_assign(c -> ControlBus, get_control_word_fetch(c -> c_s), 1);
+  char *updated_cw = malloc(sizeof(c -> ControlBus));
+  if (c -> c_s -> rc < 3) get_control_word_fetch(c -> c_s, updated_cw);
 
   else
     {
-      char *ins = get_reg(c -> c_s -> instruction, 4, 0);
+      char *ins = malloc(sizeof(c -> c_s -> instruction));	
+      get_reg(c -> c_s -> instruction, 4, 0, ins);
       if (!strcmp(ins, HLT))
 	{
 	  free(ins);
 	  return 1;
 	}
-      else if (!strcmp(ins, LDA))
-	reg_assign(c -> ControlBus, get_control_word_lda(c -> c_s), 1);
-      else if (!strcmp(ins, ADD))  
-	reg_assign(c -> ControlBus, get_control_word_add(c -> c_s), 1);
-      else if (!strcmp(ins, SUB)) 
-	reg_assign(c -> ControlBus, get_control_word_sub(c -> c_s), 1);
-      else if (!strcmp(ins, OUT)) 
-	reg_assign(c -> ControlBus, get_control_word_out(c -> c_s), 1);
+      else if (!strcmp(ins, LDA)) get_control_word_lda(c -> c_s, updated_cw);
+      else if (!strcmp(ins, ADD)) get_control_word_add(c -> c_s, updated_cw);
+      else if (!strcmp(ins, SUB)) get_control_word_sub(c -> c_s, updated_cw);
+      else if (!strcmp(ins, OUT)) get_control_word_out(c -> c_s, updated_cw);
       else printf("Error in machine cycle: no matching instruction found for %s\n", ins);
       free(ins);
     }
+  reg_assign(c -> ControlBus, updated_cw);
+  free(updated_cw);
 
   printf("T = %d:\n", c->c_s->rc+1);
   printf("  Control Bus: "); print_register(c -> ControlBus); printf("\n");
@@ -217,15 +238,14 @@ int machine_cycle(computer *c) //goes through ring counter
     }
   else c -> c_s -> rc++; 
 
-  return status;
+  return 0;
 }
 
-int run_program(computer *c)
+void run_program(computer *c)
 {
   //print_RAM(c -> Mem);
   while (c -> PC < PCMAX) //perhaps we want to control the clock ticks
     {
       if (machine_cycle(c)) break;
     }
-  return 0;
 }

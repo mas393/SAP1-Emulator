@@ -9,13 +9,11 @@ controller_sequencer* init_controller_sequencer()
   controller_sequencer *cs;
   cs = malloc(sizeof(controller_sequencer));
   cs -> rc = 0;
-  //T1;
   return cs;
 }
 
-char* get_control_word_fetch(controller_sequencer *cs)
+void get_control_word_fetch(controller_sequencer *cs, char *cw)
 {
-  char *cw = malloc(12);
   memcpy(cw, CONTROL_WORD, 12);
 
   switch (cs -> rc)
@@ -34,12 +32,10 @@ char* get_control_word_fetch(controller_sequencer *cs)
     default:
       printf("should not be here control_word_fetch");
     };
-  return cw;
 }
 
-char* get_control_word_lda(controller_sequencer *cs)
+void get_control_word_lda(controller_sequencer *cs, char *cw)
 {
-  char *cw = malloc(12);
   memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
   switch (cs -> rc)
@@ -57,13 +53,10 @@ char* get_control_word_lda(controller_sequencer *cs)
     default:
       printf("should not be here lda");
     }
-  
-  return cw;  
 }
 
-char* get_control_word_add(controller_sequencer *cs)
+void get_control_word_add(controller_sequencer *cs, char *cw)
 {
-  char *cw = malloc(12);
   memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
     switch (cs -> rc)
@@ -83,13 +76,10 @@ char* get_control_word_add(controller_sequencer *cs)
     default:
       printf("should not be here add");
     }
-    
-  return cw;  
 }
 
-char* get_control_word_sub(controller_sequencer *cs)
+void get_control_word_sub(controller_sequencer *cs, char *cw)
 {
-  char *cw = malloc(12);
   memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
     switch (cs -> rc)
@@ -109,13 +99,10 @@ char* get_control_word_sub(controller_sequencer *cs)
     default:
       printf("should not be here sub");
     }
-    
-  return cw;  
 }
 
-char* get_control_word_out(controller_sequencer *cs)
+void get_control_word_out(controller_sequencer *cs, char *cw)
 {
-  char *cw = malloc(12);
   memcpy(cw, CONTROL_WORD, 12); //default control word with everything
 
   switch (cs -> rc)
@@ -131,19 +118,16 @@ char* get_control_word_out(controller_sequencer *cs)
     default:
       printf("should not be here out");
     }
-  
-  return cw;
 }
 
-char* bit_string_from_int(int in, int s)
+void bit_string_from_int(int in, int s, char *val)
 {
-  char *val = malloc(s);
   for (int i = 0; i < s; i++) val[s-i-1] = ((char)in >> i & 0x1 ? '1': '0');
-  return val;			
 }
-char* get_PC(ProgramCounter PC)
+
+void get_PC(ProgramCounter PC, char *val)
 {
-  return bit_string_from_int(PC, 4);
+  bit_string_from_int(PC, 4, val);
 }
 
 InstructionReg* init_InstructionReg()
@@ -196,24 +180,20 @@ char add_bits(reg *r1, reg *r2, int bit_loc, char *carry)
   return v;
 }
 
-char* addition(adder_subtracter *as)
+void addition(adder_subtracter *as, char *val)
 {
   //may have to pass in bus or provide it to adder_subtracter st temp is not lost
   char carry = 0x0;
-  char *val = malloc(8);
   for (int i = 0; i < as -> BReg -> size; i++)
     {
       char v = add_bits(as -> Accumulator, as -> BReg, i, &carry);
       val[8-i-1] = v;
       
     }
-  
-  return val;
 }
 
-char* subtraction(adder_subtracter *as)
+void subtraction(adder_subtracter *as, char *val)
 {
-  char *val = malloc(8);
   int add_flag = 1;
   for (int i = 0; i < as -> BReg -> size; i++)
     {
@@ -232,6 +212,6 @@ char* subtraction(adder_subtracter *as)
 	else val[loc] = '1';
       }
     }
-  reg_assign(as -> BReg, val, 1);
-  return addition(as);
+  reg_assign(as -> BReg, val);
+  addition(as, val);
 }

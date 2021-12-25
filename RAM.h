@@ -15,7 +15,7 @@ RAM* init_RAM(int, int);
 
 void set_RAM(RAM*, char*, char*, char*);
 
-char* get_RAM(RAM*);
+void get_RAM(RAM*, char*);
 
 void print_RAM(RAM*);
 
