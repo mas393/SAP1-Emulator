@@ -35,12 +35,12 @@ void clock_tick_up(computer*);
 int machine_cycle(computer*);
 void run_program(computer*);
   
-int main()
+int main(int argc, char** argv)
 {
+  if (argc < 2) {printf("Error: please include a file for SAP-1 to run\n"); return 1;}
   computer *SAP1 = malloc(sizeof(computer)); 
-
   boot_computer(SAP1);
-  load_instructions("test.txt", SAP1);
+  load_instructions(argv[1], SAP1);
   run_program(SAP1);
   shutdown_computer(SAP1);
   
